@@ -9,7 +9,7 @@ exports.create= async (req,res)=>{
 
     if(oldUser){
         return res.status(401).json({message:"User Already exist"});
-    }
+    } 
     const newUser=new User({name,email,password});
     await newUser.save();
     res.json(newUser) 

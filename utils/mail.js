@@ -15,7 +15,7 @@ exports.geenrateMailTransport = () =>
     host: "sandbox.smtp.mailtrap.io",
     port: 2525,
     auth: {
-      user: "25dfa2def320d4",
-      pass: "033b106f027e98",
+      user: process.env.MAIL_TRAP_USER,
+      pass: process.env.MAIL_TRAP_PASS,
     },
   });

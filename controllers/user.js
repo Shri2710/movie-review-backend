@@ -1,8 +1,9 @@
 const User = require("../models/user");
 const EmailVerificationToken = require("../models/email-verification-token");
+const PasswordResetToken = require('../models/passwordResetToken');
 const { isValidObjectId } = require("mongoose");
 const { generateOTP, geenrateMailTransport } = require("../utils/mail");
-const { sendError } = require("../utils/helper");
+const { sendError, generateRandomBytes } = require("../utils/helper");
 
 exports.create = async (req, res) => {
   try {
@@ -129,3 +130,73 @@ exports.resendOTP = async (req, res) => {
     throw ex;
   }
 };
+
+exports.forgotPassword = async (req,res)=>{
+   const {email} = req  .body;
+
+   if(!email) return sendError(res,"Email is required to reset the password");
+
+   const user = await User.findOne({email});
+
+   if(!user) return sendError(res,"User not found",404);
+
+   const resetToken = await PasswordResetToken.findOne({owner : user._id});
+
+   if(resetToken) return sendError(res,"You can request OTP only after one hour");
+
+
+   const token = await generateRandomBytes();
+
+   const newPasswordResetToken = await PasswordResetToken({owner:user._id,token:token});
+   await newPasswordResetToken.save();
+
+   const resetPasswordUrl = `http://localhost:3000/reset-password?token=${token}&id=${user._id}`;
+
+   var transport = geenrateMailTransport();
+
+    transport.sendMail({
+      from: "security@support.com",
+      to: user.email,
+      subject: "Password Reset",
+      html: `
+            <p>Click here to reset password</p>
+            <a href=${resetPasswordUrl}>Change here</a>
+        `,
+    });
+
+    res.json({message:"Plz check your email for reset link"})
+   
+}
+
+exports.sendResetPasswordStatus = (req,res)=>{
+  res.json({valid:true});
+}
+
+exports.resetPassword = async (req,res)=>{
+   const {userId,password}=req.body;
+
+   const user=await User.findById(userId);
+
+   const matched = await user.compareToken(password);
+
+   if(matched) return sendError(res,"New password should not be same as previous password")
+   user.password= password;
+
+   await user.save();
+
+   await PasswordResetToken.findByIdAndDelete(req.resetToken._id);
+
+   var transport = geenrateMailTransport();
+
+    transport.sendMail({
+      from: "security@support.com",
+      to: user.email,
+      subject: "Password Reset Successful",
+      html: `
+            <h1>Password Reset is successfully done</h1>
+            <p>You can now use use new password</p>
+        `,
+    });
+
+    res.json({message:"Password Reset is successfully done, You can now use use new password"})
+}

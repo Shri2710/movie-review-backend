@@ -1,21 +1,36 @@
 const express = require("express");
-const { create, verifyEmail, resendOTP } = require("../controllers/user");
-const {userValidator,validate}=require("../middlewares/validator");
+const {
+  create,
+  verifyEmail,
+  resendOTP,
+  forgotPassword,
+  sendResetPasswordStatus,
+  resetPassword,
+} = require("../controllers/user");
+const {
+  userValidator,
+  validate,
+  isValidPassResetToken,
+  validatePassword,
+} = require("../middlewares/validator");
 const router = express.Router();
 
+
+router.post("/create", userValidator, validate, create);
+
+router.post("/verify-email", verifyEmail);
+
+router.post("/resend-otp", resendOTP);
+
+router.post("/forgot-password", forgotPassword);
+
 router.post(
-  "/create",
-  userValidator,validate,
-  create
+  "/verify-reset-token",
+  isValidPassResetToken,
+  validatePassword,
+  sendResetPasswordStatus
 );
 
-router.post(
-  "/verify-email",
-  verifyEmail
-)
+router.post("/reset-password", isValidPassResetToken, resetPassword);
 
-router.post(
-  "/resend-otp",
-  resendOTP
-)
 module.exports = router;

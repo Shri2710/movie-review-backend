@@ -10,9 +10,9 @@ exports.create = async (req, res) => {
   try {
     console.log(req.body);
     const { name, email, password } = req.body;
-    const oldUser = User.findOne({ email });
+    const oldUser = await User.findOne({ email });
 
-    if (oldUser.email) {
+    if (oldUser?.email) {
       return sendError(res, "User Already exist");
     }
     const newUser = new User({ name, email, password });
